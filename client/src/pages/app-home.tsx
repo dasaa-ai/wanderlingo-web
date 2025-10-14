@@ -46,10 +46,30 @@ export default function AppHome() {
       });
     } catch (error) {
       console.error("Translation error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to translate image";
+      
+      // Extract user-friendly error message from API response
+      let description = errorMessage;
+      const statusMatch = errorMessage.match(/(\d{3}):\s*({.*})/);
+      
+      if (statusMatch) {
+        // Server returned JSON error (e.g., "400: {...}" or "500: {...}")
+        try {
+          const errorData = JSON.parse(statusMatch[2]);
+          description = errorData.error || errorData.message || description;
+        } catch (e) {
+          // If JSON parsing fails, use the original error message
+          description = errorMessage.replace(/^\d{3}:\s*/, ''); // Remove status code prefix
+        }
+      } else if (errorMessage.toLowerCase().includes('fetch') || errorMessage.toLowerCase().includes('network')) {
+        // Network error
+        description = "Please check your internet connection and try again.";
+      }
+      
       toast({
         variant: "destructive",
         title: "Translation failed",
-        description: error instanceof Error ? error.message : "Failed to translate image. Please try again.",
+        description,
       });
     } finally {
       setIsTranslating(false);
@@ -135,7 +155,22 @@ export default function AppHome() {
                   </Button>
                 </Card>
               ) : (
-                <TranslationResult {...translationResult} />
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-heading text-lg font-semibold">Translation Result</h3>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setTranslationResult(null);
+                        setShowCamera(true);
+                      }} 
+                      data-testid="button-new-translation"
+                    >
+                      New Translation
+                    </Button>
+                  </div>
+                  <TranslationResult {...translationResult} />
+                </div>
               )}
             </div>
           </TabsContent>

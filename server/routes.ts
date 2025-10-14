@@ -11,17 +11,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { image, targetLanguage = "English" } = req.body;
 
       if (!image) {
-        return res.status(400).json({ error: "Image data is required" });
+        return res.status(400).json({ error: "Please provide an image to translate" });
       }
 
       // Extract text from image using Tesseract.js OCR
-      console.log("Starting OCR...");
+      console.log("Starting OCR for image translation...");
       const { data: { text } } = await Tesseract.recognize(image, 'eng+fra+spa+deu+ita+por+jpn+kor+chi_sim', {
-        logger: (m) => console.log(m),
+        logger: (m) => {
+          if (m.status === 'recognizing text') {
+            console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
+          }
+        },
       });
 
       if (!text || text.trim().length === 0) {
-        return res.status(400).json({ error: "No text found in image" });
+        return res.status(400).json({ 
+          error: "No readable text found in the image. Please try a clearer photo with visible text." 
+        });
       }
 
       console.log("Extracted text:", text);

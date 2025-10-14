@@ -11,6 +11,7 @@ import { LanguagePill } from "@/components/language-pill";
 import { UsageMeter } from "@/components/usage-meter";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Translation } from "@shared/schema";
@@ -306,7 +307,22 @@ export default function AppHome() {
             <div className="flex-1 overflow-auto p-4">
               <div className="mx-auto max-w-4xl space-y-4">
                 <div className="flex items-center justify-center gap-3">
-                  <LanguagePill code="en" name={chatSourceLang} flag="🇬🇧" active />
+                  <Select value={chatSourceLang} onValueChange={setChatSourceLang}>
+                    <SelectTrigger className="w-[140px]" data-testid="select-source-language">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="English">English</SelectItem>
+                      <SelectItem value="Spanish">Spanish</SelectItem>
+                      <SelectItem value="French">French</SelectItem>
+                      <SelectItem value="German">German</SelectItem>
+                      <SelectItem value="Italian">Italian</SelectItem>
+                      <SelectItem value="Portuguese">Portuguese</SelectItem>
+                      <SelectItem value="Japanese">Japanese</SelectItem>
+                      <SelectItem value="Korean">Korean</SelectItem>
+                      <SelectItem value="Chinese">Chinese</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <Button 
                     variant="ghost" 
                     size="icon" 
@@ -316,7 +332,22 @@ export default function AppHome() {
                   >
                     <ArrowRight className="h-4 w-4" />
                   </Button>
-                  <LanguagePill code="es" name={chatTargetLang} flag="🇪🇸" />
+                  <Select value={chatTargetLang} onValueChange={setChatTargetLang}>
+                    <SelectTrigger className="w-[140px]" data-testid="select-target-language">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="English">English</SelectItem>
+                      <SelectItem value="Spanish">Spanish</SelectItem>
+                      <SelectItem value="French">French</SelectItem>
+                      <SelectItem value="German">German</SelectItem>
+                      <SelectItem value="Italian">Italian</SelectItem>
+                      <SelectItem value="Portuguese">Portuguese</SelectItem>
+                      <SelectItem value="Japanese">Japanese</SelectItem>
+                      <SelectItem value="Korean">Korean</SelectItem>
+                      <SelectItem value="Chinese">Chinese</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {chatMessages.length === 0 ? (

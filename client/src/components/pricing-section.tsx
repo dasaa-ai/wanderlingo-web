@@ -16,31 +16,19 @@ export function PricingSection() {
       cta: "Get Started",
     },
     {
-      name: "Pro",
-      price: "$4.99",
-      period: "month",
-      description: "Perfect for frequent travelers",
+      name: "Lifetime",
+      price: "$89",
+      description: "One-time payment, yours forever",
       features: [
         "Unlimited camera translations",
         "Unlimited chat messages",
         "Full library access with trips",
         "Offline mode with sync",
-        "Priority support",
-      ],
-      popular: true,
-      cta: "Start Free Trial",
-    },
-    {
-      name: "Lifetime",
-      price: "$59",
-      description: "One-time payment, yours forever",
-      features: [
-        "Everything in Pro",
-        "Pay once, use forever",
         "Fair-use cap (1k images/month)",
         "Early access to new features",
         "VIP support",
       ],
+      popular: true,
       cta: "Buy Lifetime",
     },
   ];
@@ -61,7 +49,7 @@ export function PricingSection() {
           </p>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-3 max-w-6xl mx-auto">
+        <div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto">
           {plans.map((plan) => (
             <PricingCard
               key={plan.name}
@@ -70,10 +58,6 @@ export function PricingSection() {
             />
           ))}
         </div>
-
-        <p className="text-center text-sm text-muted-foreground mt-12">
-          All plans include a 14-day money-back guarantee. Cancel anytime.
-        </p>
       </div>
     </section>
   );

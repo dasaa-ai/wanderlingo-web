@@ -2,173 +2,169 @@
 
 ## Design Foundation
 
-**Approach**: Reference-Based Hybrid (Airbnb warmth + Notion clarity)  
-**Principles**: Travel-first warmth, instant comprehension, progressive disclosure, mobile-native
+**Approach**: Reference-Based (Canva's bright clarity + Airbnb's travel warmth)  
+**Principles**: Clean minimalism, instant usability, soft visual comfort, mobile-first
 
 ---
 
 ## Color System
 
-### Light Mode (HSL)
-- Primary: `220 75% 55%` | Hover: `220 75% 48%`
-- Secondary: `142 60% 45%`
-- BG: `0 0% 100%` | Surface: `220 15% 97%`
-- Text: `220 20% 15%` (primary), `220 15% 45%` (secondary)
-- Border: `220 15% 88%`
+### Light Mode (Primary)
+- **Primary**: `0 0% 96.08%` (soft white) | Hover: `0 0% 92%`
+- **Secondary**: `0 0% 92.16%` (light gray)
+- **Accent**: `9 75% 61%` (coral accent for CTAs/highlights)
+- **Background**: `45 25% 97%` (warm off-white)
+- **Surface**: `300 4.35% 96%` (card backgrounds)
+- **Text Primary**: `0 0% 5.1%` (near black)
+- **Text Secondary**: `0 0% 67.06%` (medium gray)
+- **Border**: `0 0% 16.86%` (subtle but visible)
+- **Muted**: `0 0% 25.1%`
+- **Success**: `147 78% 42%` | **Warning**: `42 93% 56%` | **Error**: `356 91% 54%`
 
 ### Dark Mode
-- Primary: `220 70% 60%` | Hover: `220 70% 68%`
-- Secondary: `142 55% 50%`
-- BG: `220 18% 10%` | Surface: `220 15% 14%`
-- Text: `220 10% 95%` (primary), `220 12% 65%` (secondary)
-- Border: `220 15% 22%`
+- **Background**: `20 14% 4%`
+- **Surface/Card**: `20 14% 8%`
+- **Primary**: `9 75% 61%`
+- **Text**: `45 25% 91%` (primary), `45 15% 46%` (secondary)
+- **Border**: `20 14% 15%`
+- **Accent**: `25 45% 20%`
 
-### Semantic (context-adaptive)
-Success `142 60% 45%` | Warning `38 90% 55%` | Error `0 70% 55%` | Info `210 75% 55%`
+### Shadows (Canva-style subtle)
+- **xs**: `0px 2px 0px 0px hsl(9 75% 61% / 0)`
+- **sm**: `0px 1px 2px -1px hsl(9 75% 61% / 0)`
+- **md**: `0px 2px 4px -1px rgba(0,0,0,0.06)`
+- **lg**: `0px 4px 6px -1px rgba(0,0,0,0.08)`
 
 ---
 
 ## Typography
 
-**Fonts**: Manrope (headings), Inter (body/UI), JetBrains Mono (technical)
+**Fonts**: Inter (all contexts), JetBrains Mono (code/technical only)
 
-**Scale**:
-- Display: 4xl-6xl (56-72px), bold
-- H1: 3xl-4xl (36-48px), semibold
-- H2: 2xl-3xl (28-36px), semibold
-- H3: xl-2xl (20-28px), medium
-- Body Large: lg (18px) - translations
-- Body: base (16px)
-- Small: sm (14px) - metadata
-- Micro: xs (12px), medium - labels
+**Scale** (Canva-inspired soft hierarchy):
+- Display: `text-5xl md:text-6xl` (48-60px), font-semibold
+- H1: `text-4xl md:text-5xl` (36-48px), font-semibold  
+- H2: `text-2xl md:text-3xl` (24-36px), font-medium
+- H3: `text-xl md:text-2xl` (20-28px), font-medium
+- Body Large: `text-lg` (18px) - translations, feature text
+- Body: `text-base` (16px), font-normal
+- Small: `text-sm` (14px) - metadata, labels
+- Micro: `text-xs` (12px), font-medium - badges, tags
 
 ---
 
-## Layout
+## Layout & Spacing
 
-**Spacing Units**: 2, 4, 6, 8, 12, 16, 20, 24
+**Spacing Units**: `0.25rem` base - use multiples of 2, 4, 6, 8, 12, 16, 20, 24
 
 **Containers**:
-- Landing: `max-w-7xl`, full-width hero
-- App shell: `max-w-6xl`
-- Camera/Chat: `max-w-4xl`
-- Library: `max-w-7xl`
+- Landing hero: Full-width with `max-w-7xl` content
+- App shell: `max-w-6xl`  
+- Camera/translation: `max-w-4xl`
+- Library grid: `max-w-7xl`
 
-**Grids**:
-- Features: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6`
-- Library: `grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4`
+**Corner Radius**: `0.4rem` base
+- Cards/surfaces: `rounded-2xl` (16px)
+- Buttons: `rounded-xl` (12px)
+- Inputs: `rounded-lg` (8px)
+- Pills/tags: `rounded-full`
 
-**Rhythm**:
-- Sections: `py-12 md:py-20 lg:py-24`
-- Cards: `p-6 md:p-8`
-- Component gaps: `gap-4` (tight), `gap-8` (distinct)
+**Vertical Rhythm**:
+- Landing sections: `py-16 md:py-24 lg:py-32`
+- Card padding: `p-8`
+- Component spacing: `gap-6` (related), `gap-12` (sections)
 
 ---
 
 ## Components
 
 ### Navigation
-- **Landing Header**: Sticky blur backdrop, logo left, nav center, CTA right (desktop); hamburger (mobile)
-- **App Tabs**: Bottom nav (mobile), sidebar (desktop); active state = brand fill
+- **Landing Header**: White background `bg-white/80 backdrop-blur-md`, minimal shadow, logo left, clean nav center, coral CTA right; sticky top
+- **App Tabs** (mobile): Bottom nav with soft shadows, icons 24px, active state = coral fill
+- **Sidebar** (desktop): 240px, white background, coral accent on active
 
-### Cards & Surfaces
-- **Translation**: `rounded-2xl border shadow-sm` (light), subtle glow (dark)
-- **Menu Items**: `rounded-xl hover:shadow-md`
-- **Library**: Compact w/ thumbnail, metadata overlay, hover lift
-- **Features**: Icon top-left, heading, description, gradient bg
+### Cards & Surfaces  
+- **Base Card**: `bg-white rounded-2xl border border-gray-200 p-8 hover:shadow-lg transition-shadow`
+- **Translation Result**: Soft gray background `bg-gray-50`, rounded corners, generous padding
+- **Feature Cards**: White cards, icon (coral), heading, description, subtle hover lift
+- **Library Items**: Thumbnail left, metadata right, rounded-xl, border, compact `p-4`
 
-### Buttons
-- **Primary**: Brand fill, white text, `rounded-xl px-6 py-3 shadow-sm hover:shadow-md`
-- **Secondary**: Transparent, brand border/text, `rounded-xl`
-- **Ghost**: Transparent, `hover:bg-surface`
-- **FAB**: Circular, gradient, `shadow-lg`, fixed bottom-right
+### Buttons (Canva-style soft)
+- **Primary (Coral CTA)**: `bg-[hsl(9,75%,61%)] text-white rounded-xl px-8 py-3 font-medium hover:bg-[hsl(9,75%,55%)] shadow-sm`
+- **Secondary**: `bg-gray-100 text-gray-900 rounded-xl px-8 py-3 hover:bg-gray-200`
+- **Outline**: `bg-white/90 backdrop-blur border-2 border-white text-white rounded-xl px-8 py-3` (for hero images)
+- **Ghost**: `text-gray-700 hover:bg-gray-100 rounded-lg`
+- **FAB**: Coral, circular, `shadow-lg`, bottom-right fixed
 
-### Forms
-- **Inputs**: `rounded-lg border-2 focus:border-brand px-4 py-3`
-- **Language Select**: Pills w/ flag emoji, active = brand bg
-- **Dropdowns**: shadcn/ui, `rounded-lg`, scrollable
+### Forms & Inputs
+- **Text Input**: `bg-white border-2 border-gray-200 rounded-lg px-4 py-3 focus:border-coral focus:ring-2 focus:ring-coral/20`
+- **Language Pills**: Rounded-full, flag emoji, active = coral background
+- **Dropdowns**: Clean white, subtle shadow, scrollable
 
 ### Data Display
-- **Translation Output**: Two-column (source|target), visual separator, distinct surface colors
-- **Usage Meter**: Gradient progress bar, contextual color (green→yellow→red)
-- **Chat Bubbles**: `rounded-2xl`, left (user/surface), right (translation/brand tint)
-- **Tags**: `rounded-full` pills, border, `hover:bg-brand/10`
+- **Translation Panel**: Two-column (source | target), soft divider, distinct backgrounds (white | gray-50)
+- **Progress Bars**: Soft gradient (green→coral), rounded-full, percentage overlay
+- **Chat Bubbles**: User (white, left) | Translation (coral tint, right), `rounded-2xl`, timestamps below
+- **Stats/Metrics**: Large numbers (coral), context text below, icon top-left
 
 ### Overlays
-- **Paywall**: Centered `max-w-2xl rounded-3xl backdrop-blur-md`
-- **Language Picker**: Bottom sheet (mobile), modal (desktop), search top
-- **Camera**: Full-screen, viewfinder guides, capture button bottom-center
+- **Modals**: `max-w-2xl bg-white rounded-3xl p-8 shadow-2xl`
+- **Bottom Sheets** (mobile): Rounded top corners, handle indicator, white background
+- **Paywall**: Centered, blurred backdrop, feature list with checkmarks
 
-**Icons**: Lucide, 20px default, 24px (primary actions), 16px (metadata)
-
----
-
-## Interactions
-
-### Animations (minimal, purposeful)
-- Page transitions: fade 150ms
-- Button active: scale 0.98
-- Card hover: translateY -2px, shadow increase, 200ms ease
-- Modal entry: fade + scale from 0.95, 250ms
-- **No scroll animations** - instant usability priority
-
-### Microinteractions
-- Checkmark on save
-- Ripple on mic activation
-- Language swap: 180° rotate
-- Copy: toast bottom-center
+**Icons**: Lucide React, 20px default, 24px actions, coral for primary/active states
 
 ---
 
-## Page Layouts
+## Page Structures
 
 ### Landing Page
 
-**Hero** (80vh): Full-width travel image (blur + gradient overlay), centered content (logo, Display headline, tagline, 2 CTAs), phone mockup offset-right (desktop)
+**Hero** (full-width, `h-[600px] md:h-[700px]`):  
+- Travel scene image (bright, inviting), 30% blur + light gradient overlay
+- Centered content: Display headline, subtitle, dual CTAs (coral primary + outline secondary)
+- iPhone mockup floating right (desktop only)
 
-**Features**: 3-col grid, icon (48px) + H2 + description + 3-4 micro-features, alternating bg tints
+**Features** (`py-24`):  
+3-column grid (1 col mobile), white cards, coral icons (48px), H2 titles, body text, micro-features list
 
-**How It Works**: Horizontal timeline (desktop), vertical (mobile), numbered circles + dotted line
+**How It Works** (`py-20`):  
+Horizontal numbered timeline (desktop), soft connecting line, step cards with illustrations
 
-**Social Proof**: 2-col (testimonial carousel | usage stats), large numbers + context
+**Social Proof** (`py-24 bg-gray-50`):  
+2-column: Testimonial carousel (left, white cards) | Usage stats (right, large coral numbers)
 
-**Pricing**: 3-col plan comparison (Free, Pro, Lifetime), highlight Pro, FAQ accordion
+**Pricing** (`py-24`):  
+3-column plan cards, highlight Pro (coral border, shadow-lg), feature checkmarks, coral CTA
 
-**Footer**: 4-col grid (Product, Company, Legal, Language), newsletter signup, social icons
+**Footer** (`py-16 bg-white border-t`):  
+4-column grid (Product, Support, Company, Social), newsletter input with coral send button
 
 ### App Shell
 
-**Mobile**: Full viewport, bottom tabs (Camera, Chat, Library, Account), swipe-down user menu
-
-**Desktop**: Left sidebar (240px) w/ logo, tabs, usage meter; main area w/ contextual header
+**Mobile**: Full viewport, clean bottom tabs (white background, coral active), top header with back/menu
+**Desktop**: Left sidebar (white, coral accents), main area with contextual toolbar
 
 ### Camera Translation
-
-**Capture**: Full camera feed, large bottom-center button, top bar (Close, Flash, Gallery), corner brackets
-
-**Results**: Split (image top/left, text overlay) | Translation panel (languages, text @ Body Large, actions: Save/Copy/Speak/Re-translate) | **Menu Mode**: Allergen (red), Veg (green), Cultural Tip chips
+- Full camera feed with soft corner brackets
+- Large circular capture button (coral), bottom-center
+- Results: Image thumbnail + translation panel (white card, generous padding)
+- Menu allergen tags: Red badges, clear icons
 
 ### Travel Chat
-
-Top: Language selector (source ⇄ swap ⇄ target) | Bubbles (user left/surface, translation right/brand tint, timestamps) | Bottom: text input, mic (pulse when active), send | Speak button per bubble
+- Language selector top (soft pill design, swap icon)
+- Message bubbles: User (white) | AI (coral-tinted), rounded-2xl
+- Input bar: Clean white, mic button (coral when active), send arrow
 
 ### Library
+- Filter chips (scrollable, rounded-full, active = coral)
+- Masonry grid: Cards with thumbnails, metadata overlays, 3-dot menu
+- Trip folders: Photo cards, name, dates, item count badge
 
-**Filter**: Scrollable chips (All, Images, Text, Chat, languages), search, filter drawer
-
-**Grid**: Masonry (images tall, text compact), cards w/ thumbnail, badges, tags, timestamp, 3-dot menu
-
-**Trips**: Folder cards (photo, name, dates, count), expandable
-
-### Account/Settings
-
-**Profile**: Avatar, name, email, tier badge, language prefs (home + 5 targets)
-
-**Usage** (Free): 2 progress meters (images, chat), upgrade CTA at limits
-
-**Billing** (Pro): Plan card, renewal, Stripe portal, export CSV
-
-**Settings**: Theme, offline mode, speech prefs
+### Account/Settings  
+- Profile card: Avatar, tier badge (coral), language preferences
+- Usage meters: Soft progress bars with contextual colors
+- Settings list: Clean rows, toggle switches (coral), section dividers
 
 ---
 
@@ -176,29 +172,35 @@ Top: Language selector (source ⇄ swap ⇄ target) | Bubbles (user left/surface
 
 **Essential Placements**:
 
-1. **Landing Hero** (1920x1080): Outdoor café, menu boards, diverse travelers, sunlight. 20% blur + dark gradient overlay. Full-width, 80vh top
+1. **Landing Hero** (1920×1080): Bright outdoor café scene, colorful menus, travelers, natural light. 30% blur + soft gradient. Full-width top.
 
-2. **Feature Illustrations** (600x400 each): Camera (phone photo of French menu), Chat (person + translated bubble), Library (grid + map pins). Above feature cards, `rounded-2xl shadow`
+2. **Feature Illustrations** (600×400): Camera (phone scanning menu), Chat (translation bubble), Library (grid view). Above feature cards, rounded corners.
 
-3. **App Mockup** (900x1800): iPhone frame, camera translation active. Hero offset-right (desktop), below CTAs (mobile)
+3. **App Mockup** (900×1800): iPhone showing translation, floating right side of hero (desktop only).
 
-4. **Trip Thumbnails** (400x300): Destination photos, `rounded-lg`, overlay w/ trip name
+4. **Testimonial Avatars** (80×80): Circular, bright backgrounds, traveler photos.
 
-5. **Testimonials** (80x80): Circular traveler avatars
+5. **Trip Thumbnails** (400×300): Destination imagery, rounded-lg, subtle overlay.
+
+---
+
+## Interactions (Minimal Canva-style)
+
+- **Transitions**: Fade 150ms, no scroll animations
+- **Hover**: Cards lift 2px with shadow increase, buttons scale 0.98 on active
+- **Focus**: 2px coral ring with offset, visible both modes  
+- **Loading**: Subtle skeleton loaders (gray-200), spinners (coral)
+- **Microinteractions**: Checkmark saves, mic pulse (coral), toast notifications (bottom-center)
 
 ---
 
 ## Accessibility
 
-- **Focus**: 2px brand ring w/ offset, visible both modes
-- **ARIA**: All icon buttons, selectors, camera controls
-- **Keyboard**: Full tab order, Esc closes modals, Enter submits
-- **Contrast**: 4.5:1 body text, 3:1 large headings
-- **Images**: next/image, blur placeholders, lazy load
-- **Loading**: Skeletons (Library), spinners (translations), shimmers (images)
-
-**Dark Mode**: Visible input borders (not shadow-only), reduced shadow intensity, test camera UI visibility
+- **Contrast**: 4.5:1 text, 3:1 large headings, visible borders in dark mode
+- **Keyboard**: Full navigation, Esc closes, Enter submits, focus visible
+- **ARIA**: Labels on icons, status on meters, live regions for translations
+- **Images**: Lazy load, blur placeholders, alt text required
 
 ---
 
-*Confident, travel-ready experience—inspiring yet highly functional.*
+*Clean, bright, instantly usable—Canva meets global travel.*

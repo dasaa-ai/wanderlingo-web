@@ -1,0 +1,192 @@
+Replit Prompt (paste as your only instruction)
+
+You are a senior full-stack engineer. Build a production-ready web-only MVP for an AI translation companion called WanderLingo (you may keep the internal codename MenuSnap). The app is mobile-responsive and deployed from one repo.
+
+Core value
+
+Instantly translate menus, signs, and documents from the browser camera or image upload.
+
+Travel Chat: user types/speaks in any language; reply is generated in a chosen output language; show dual view (source + target).
+
+Library: all translations (image, text, chat) are saved, searchable, taggable, with lightweight offline access.
+
+Stack
+
+Web framework: Next.js (App Router, TypeScript).
+
+UI: Tailwind CSS, shadcn/ui, Lucide icons.
+
+State/Data: React Query (TanStack Query) + minimal Zustand store for UI prefs.
+
+Auth/DB/Storage: Supabase (email/password + OAuth), Postgres, storage buckets.
+
+Payments: Stripe Checkout + Billing Portal (monthly, yearly, lifetime); test webhooks.
+
+Analytics: PostHog (feature events + paywall funnels).
+
+Internationalization: next-intl with JSON message files.
+
+OCR: Tesseract.js (browser) with a server fallback API route.
+
+Speech: Web Speech API for TTS; Whisper API (OpenAI) for STT via server route (optional toggle).
+
+Translation (swappable adapters):
+
+Primary: OpenAI GPT-4o-mini for short/medium text and menu reasoning (allergens, veg/vegan).
+
+Fallback for bulk: DeepL API adapter (optional env).
+
+Offline: Service Worker + IndexedDB (idb library) for local cache of Library items and “recent phrases”.
+
+Create a clean provider interface:
+
+export interface TranslationProvider {
+  translate(input: { text?: string; sourceLang?: string; targetLang: string; mode: "menu"|"general"|"chat"}): Promise<{ 
+    translated: string; 
+    sourceLang: string; 
+    notes?: string[]; 
+    glossary?: Array<{term:string; meaning:string}>
+  }>;
+}
+
+
+Implement OpenAITranslationProvider and optional DeepLTranslationProvider. A factory selects based on env + payload length.
+
+Pages & routes
+
+/ Landing (hero, feature cards, screenshots, pricing teaser, email capture).
+
+/app (protected shell with tabs): Camera, Chat, Library, Account.
+
+/pricing Plans + FAQ + CTA (uses same components as paywall).
+
+/terms, /privacy.
+
+API routes: /api/translate, /api/ocr, /api/limits, /api/stripe/*, /api/webhook/stripe, /api/auth/*.
+
+App UX (key screens)
+
+Camera Translate
+
+Uses getUserMedia with a fallback “Upload image”.
+
+After capture → OCR via Tesseract.js worker.
+
+Show side-by-side original text blocks and translated blocks.
+
+Provide: Save, Copy, Speak, Add tag, Re-translate (change target).
+
+For mode:"menu", render chips: Allergens, Veg/Vegan, and Cultural tip (1 line).
+
+Travel Chat (Interpreter)
+
+Input box with auto-detect for source language.
+
+Output language selector pill; Swap button.
+
+Two-column bubble layout (You / Target).
+
+Mic button (STT optional) and Speak outgoing.
+
+Save snippet to Library.
+
+Library
+
+Filters: Type (image/text/chat), Languages, Tags; full-text search.
+
+Group by Trips (folders). Item detail: original + translated + notes.
+
+Offline toggle → stored in IndexedDB; sync when online.
+
+Account / Paywall
+
+Profile, language prefs, usage meter, downloads export.
+
+Paywall modal with plan switcher; Stripe Checkout; Billing Portal link.
+
+Data model (Supabase)
+
+profiles(id, email, home_lang, targets text[])
+
+items(id, user_id, type enum['image','text','chat'], source_lang, target_lang, source_preview text, translated text, notes jsonb, tags text[], trip_id, created_at)
+
+trips(id, user_id, name, country, start_date, end_date)
+
+limits(id, user_id, period_start timestamptz, img_used int, chat_used int)
+
+Storage: captures/ for uploaded images.
+
+RLS: user-scoped SELECT/INSERT/UPDATE; storage policies for user folders.
+
+Monetization (ship now)
+
+Free: 3 image translations/day, 20 chat messages/day, basic history (last 20).
+
+Pro: unlimited, Library + Trips, offline cache, priority queue. Intro pricing $4.99/mo or $29/yr.
+
+Lifetime: $59 fair-use cap (e.g., 1k images/mo).
+
+Implement Stripe products/prices via env and seed script; full test webhooks.
+
+Acceptance criteria (MVP)
+
+User signs up → picks home language + two target languages (onboarding).
+
+Take photo or upload menu image → OCR → translation with 2–5 notes (allergens/veg & 1 cultural tip) → Save to Library.
+
+Send chat message in English with output=Italian → reply in Italian; Swap works; transcript saved.
+
+Usage limits enforced; paywall triggers; Stripe test checkout flips Pro in Supabase; features unlock without reload.
+
+Library search returns results across text and chat.
+
+Works on mobile Safari/Chrome; offline reads from IndexedDB; pending actions sync when back online.
+
+Developer quality
+
+TypeScript strict, ESLint/Prettier.
+
+Minimal unit tests: translation adapter + OCR pipeline; Playwright smoke for Camera, Chat, Paywall.
+
+.env.example with:
+
+NEXT_PUBLIC_SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+OPENAI_API_KEY=
+DEEPL_API_KEY=        # optional
+STRIPE_SECRET_KEY=
+STRIPE_PRICE_MONTHLY_ID=
+STRIPE_PRICE_YEARLY_ID=
+STRIPE_PRICE_LIFETIME_ID=
+POSTHOG_KEY=
+NEXT_PUBLIC_POSTHOG_HOST=
+
+
+README with setup (Supabase SQL, Stripe products, running web, deploying on Vercel), plus a seed script to create plans and a demo user.
+
+Simple brand tokens in /design/tokens.json (colors, radius, spacing, type scale).
+
+Accessibility: focus states, ARIA labels, keyboard nav, high-contrast mode.
+
+Visual style
+
+Clean travel vibe: big headings, soft shadows, rounded-2xl cards, roomy spacing.
+
+Reusable components: PrimaryButton, BottomSheet, LanguagePill, UsageMeter, PaywallDialog.
+
+Dark/light themes; system preference default.
+
+Build it now.
+
+Name & positioning
+
+Recommended brand: WanderLingo — broad, friendly, memorable; scales beyond menus.
+
+Alternatives: BabelBite (food-forward), MenuSnap (literal, great SEO for “menu translate”).
+
+Tagline: “See, say, and save any language—on the go.”
+
+Pricing to start
+
+Free → Pro $4.99/mo or $29/yr, Lifetime $59. Offer a 2-week “Travel Pass” add-on ($4.99) for trip-based buyers.

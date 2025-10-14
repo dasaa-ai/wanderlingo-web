@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Camera, MessageCircle, Library as LibraryIcon, User, ArrowRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Camera, MessageCircle, Library as LibraryIcon, User, ArrowRight, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -13,18 +13,74 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import type { Translation } from "@shared/schema";
 
 export default function AppHome() {
   const [activeTab, setActiveTab] = useState("camera");
   const [showCamera, setShowCamera] = useState(false);
   const [translationResult, setTranslationResult] = useState<any>(null);
   const [isTranslating, setIsTranslating] = useState(false);
-  const [chatMessages, setChatMessages] = useState([
-    { message: "Hello, where is the nearest restaurant?", language: "English", isUser: true, timestamp: "2:45 PM" },
-    { message: "Bonjour, où se trouve le restaurant le plus proche?", language: "French", isUser: false, timestamp: "2:45 PM" },
-  ]);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [inputMessage, setInputMessage] = useState("");
+  const [chatSourceLang, setChatSourceLang] = useState("English");
+  const [chatTargetLang, setChatTargetLang] = useState("Spanish");
+  const [isTranslatingChat, setIsTranslatingChat] = useState(false);
+  const [libraryTranslations, setLibraryTranslations] = useState<Translation[]>([]);
+  const [librarySearch, setLibrarySearch] = useState("");
+  const [usageStats, setUsageStats] = useState({ cameraTranslations: 0, chatMessages: 0 });
   const { toast } = useToast();
+
+  // Fetch library translations on mount and tab change
+  useEffect(() => {
+    if (activeTab === "library") {
+      fetchLibraryTranslations();
+    }
+  }, [activeTab]);
+
+  // Fetch usage stats on account tab
+  useEffect(() => {
+    if (activeTab === "account") {
+      fetchUsageStats();
+    }
+  }, [activeTab]);
+
+  const fetchLibraryTranslations = async () => {
+    try {
+      const response = await apiRequest("GET", "/api/translations");
+      const data = await response.json();
+      setLibraryTranslations(data);
+    } catch (error) {
+      console.error("Error fetching translations:", error);
+    }
+  };
+
+  const fetchUsageStats = async () => {
+    try {
+      const response = await apiRequest("GET", "/api/usage");
+      const data = await response.json();
+      setUsageStats(data);
+    } catch (error) {
+      console.error("Error fetching usage:", error);
+    }
+  };
+
+  const saveToLibrary = async (translationData: any, type: "camera" | "chat") => {
+    try {
+      await apiRequest("POST", "/api/translations", {
+        type,
+        originalText: translationData.original,
+        translatedText: translationData.translated,
+        sourceLang: translationData.sourceLang,
+        targetLang: translationData.targetLang,
+        allergens: translationData.allergens || [],
+        dietary: translationData.dietary || [],
+        culturalTip: translationData.culturalTip || "",
+        tags: [],
+      });
+    } catch (error) {
+      console.error("Error saving to library:", error);
+    }
+  };
 
   const handleCapture = async (imageData: string) => {
     console.log("Image captured:", imageData);
@@ -40,6 +96,13 @@ export default function AppHome() {
 
       const result = await response.json();
       setTranslationResult(result);
+      
+      // Save to library
+      await saveToLibrary(result, "camera");
+      
+      // Refresh usage stats
+      await fetchUsageStats();
+      
       toast({
         title: "Translation complete!",
         description: "Your image has been translated successfully.",
@@ -76,16 +139,80 @@ export default function AppHome() {
     }
   };
 
-  const handleSendMessage = () => {
-    if (!inputMessage.trim()) return;
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || isTranslatingChat) return;
     
-    // TODO: remove mock functionality
-    setChatMessages([
-      ...chatMessages,
-      { message: inputMessage, language: "English", isUser: true, timestamp: "Now" },
-      { message: "Translation would appear here", language: "Spanish", isUser: false, timestamp: "Now" },
-    ]);
+    const userMessage = inputMessage;
     setInputMessage("");
+    setIsTranslatingChat(true);
+
+    // Add user message to chat
+    const newUserMessage = { 
+      message: userMessage, 
+      language: chatSourceLang, 
+      isUser: true, 
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setChatMessages([...chatMessages, newUserMessage]);
+
+    try {
+      const response = await apiRequest("POST", "/api/translate-text", {
+        text: userMessage,
+        sourceLang: chatSourceLang,
+        targetLang: chatTargetLang,
+      });
+
+      const result = await response.json();
+      
+      // Save to library
+      await saveToLibrary(result, "chat");
+      
+      // Refresh usage stats
+      await fetchUsageStats();
+
+      // Add translated message to chat
+      const translatedMessage = {
+        message: result.translated,
+        language: chatTargetLang,
+        isUser: false,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      
+      setChatMessages(prev => [...prev, translatedMessage]);
+    } catch (error) {
+      console.error("Chat translation error:", error);
+      toast({
+        variant: "destructive",
+        title: "Translation failed",
+        description: "Unable to translate your message. Please try again.",
+      });
+    } finally {
+      setIsTranslatingChat(false);
+    }
+  };
+
+  const swapLanguages = () => {
+    const temp = chatSourceLang;
+    setChatSourceLang(chatTargetLang);
+    setChatTargetLang(temp);
+  };
+
+  const deleteTranslation = async (id: string) => {
+    try {
+      await apiRequest("DELETE", `/api/translations/${id}`);
+      setLibraryTranslations(prev => prev.filter(t => t.id !== id));
+      toast({
+        title: "Translation deleted",
+        description: "The translation has been removed from your library.",
+      });
+    } catch (error) {
+      console.error("Error deleting translation:", error);
+      toast({
+        variant: "destructive",
+        title: "Delete failed",
+        description: "Unable to delete the translation. Please try again.",
+      });
+    }
   };
 
   return (
@@ -179,18 +306,46 @@ export default function AppHome() {
             <div className="flex-1 overflow-auto p-4">
               <div className="mx-auto max-w-4xl space-y-4">
                 <div className="flex items-center justify-center gap-3">
-                  <LanguagePill code="en" name="English" flag="🇬🇧" active />
-                  <Button variant="ghost" size="icon" className="h-8 w-8" data-testid="button-swap-languages">
+                  <LanguagePill code="en" name={chatSourceLang} flag="🇬🇧" active />
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8" 
+                    onClick={swapLanguages}
+                    data-testid="button-swap-languages"
+                  >
                     <ArrowRight className="h-4 w-4" />
                   </Button>
-                  <LanguagePill code="es" name="Spanish" flag="🇪🇸" />
+                  <LanguagePill code="es" name={chatTargetLang} flag="🇪🇸" />
                 </div>
 
-                <div className="space-y-4">
-                  {chatMessages.map((msg, i) => (
-                    <ChatBubble key={i} {...msg} />
-                  ))}
-                </div>
+                {chatMessages.length === 0 ? (
+                  <Card className="p-12 text-center">
+                    <MessageCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+                    <h3 className="font-heading text-xl font-semibold mb-2">
+                      Start a conversation
+                    </h3>
+                    <p className="text-muted-foreground">
+                      Type a message below to get instant translation
+                    </p>
+                  </Card>
+                ) : (
+                  <div className="space-y-4">
+                    {chatMessages.map((msg, i) => (
+                      <ChatBubble key={i} {...msg} />
+                    ))}
+                    {isTranslatingChat && (
+                      <div className="flex justify-start">
+                        <div className="bg-muted px-4 py-2 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                            <span className="text-sm text-muted-foreground">Translating...</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -200,10 +355,15 @@ export default function AppHome() {
                   placeholder="Type a message..."
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
+                  disabled={isTranslatingChat}
                   data-testid="input-chat-message"
                 />
-                <Button onClick={handleSendMessage} data-testid="button-send-message">
+                <Button 
+                  onClick={handleSendMessage} 
+                  disabled={!inputMessage.trim() || isTranslatingChat}
+                  data-testid="button-send-message"
+                >
                   Send
                 </Button>
               </div>
@@ -212,28 +372,54 @@ export default function AppHome() {
 
           <TabsContent value="library" className="m-0 h-full p-4">
             <div className="mx-auto max-w-6xl space-y-4">
-              <Input placeholder="Search translations..." data-testid="input-search-library" />
+              <Input 
+                placeholder="Search translations..." 
+                value={librarySearch}
+                onChange={(e) => setLibrarySearch(e.target.value)}
+                data-testid="input-search-library" 
+              />
               
               <div className="space-y-3">
-                {/* TODO: remove mock functionality */}
-                <LibraryItem
-                  type="image"
-                  sourcePreview="Menu du jour"
-                  translated="Menu of the day"
-                  sourceLang="French"
-                  targetLang="English"
-                  tags={["Paris", "Restaurant"]}
-                  timestamp="2 hours ago"
-                />
-                <LibraryItem
-                  type="chat"
-                  sourcePreview="Where is the train station?"
-                  translated="¿Dónde está la estación de tren?"
-                  sourceLang="English"
-                  targetLang="Spanish"
-                  tags={["Travel"]}
-                  timestamp="Yesterday"
-                />
+                {libraryTranslations.length === 0 ? (
+                  <Card className="p-12 text-center">
+                    <LibraryIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+                    <h3 className="font-heading text-xl font-semibold mb-2">
+                      No saved translations yet
+                    </h3>
+                    <p className="text-muted-foreground">
+                      Your camera and chat translations will appear here
+                    </p>
+                  </Card>
+                ) : (
+                  libraryTranslations
+                    .filter(t => 
+                      !librarySearch || 
+                      t.originalText.toLowerCase().includes(librarySearch.toLowerCase()) ||
+                      t.translatedText.toLowerCase().includes(librarySearch.toLowerCase())
+                    )
+                    .map((translation) => (
+                      <div key={translation.id} className="relative group">
+                        <LibraryItem
+                          type={translation.type === "camera" ? "image" : "chat"}
+                          sourcePreview={translation.originalText}
+                          translated={translation.translatedText}
+                          sourceLang={translation.sourceLang}
+                          targetLang={translation.targetLang}
+                          tags={translation.tags || []}
+                          timestamp={new Date(translation.createdAt).toLocaleDateString()}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => deleteTranslation(translation.id)}
+                          data-testid={`button-delete-${translation.id}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))
+                )}
               </div>
             </div>
           </TabsContent>
@@ -241,28 +427,40 @@ export default function AppHome() {
           <TabsContent value="account" className="m-0 h-full p-4">
             <div className="mx-auto max-w-2xl space-y-6">
               <Card className="p-6">
-                <h3 className="font-heading text-xl font-semibold mb-4">Usage Limits</h3>
+                <h3 className="font-heading text-xl font-semibold mb-4">Usage Today</h3>
                 <div className="space-y-4">
-                  <UsageMeter label="Camera Translations Today" used={2} limit={3} variant="warning" />
-                  <UsageMeter label="Chat Messages Today" used={15} limit={20} />
+                  <UsageMeter 
+                    label="Camera Translations" 
+                    used={usageStats.cameraTranslations} 
+                    limit={100} 
+                    variant={usageStats.cameraTranslations > 80 ? "warning" : undefined}
+                  />
+                  <UsageMeter 
+                    label="Chat Messages" 
+                    used={usageStats.chatMessages} 
+                    limit={100}
+                    variant={usageStats.chatMessages > 80 ? "warning" : undefined}
+                  />
                 </div>
-                <Button className="w-full mt-6" data-testid="button-upgrade">
-                  Upgrade to Pro
-                </Button>
+                <div className="mt-6 p-4 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-semibold text-foreground">Free Plan</span> • Limited to 100 translations per day
+                  </p>
+                  <Button className="w-full mt-4" data-testid="button-upgrade">
+                    Upgrade to Lifetime ($89)
+                  </Button>
+                </div>
               </Card>
 
               <Card className="p-6">
                 <h3 className="font-heading text-xl font-semibold mb-4">Language Preferences</h3>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Home Language</label>
-                    <LanguagePill code="en" name="English" flag="🇬🇧" active />
-                  </div>
-                  <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Target Languages</label>
-                    <div className="flex flex-wrap gap-2">
-                      <LanguagePill code="es" name="Spanish" flag="🇪🇸" />
-                      <LanguagePill code="fr" name="French" flag="🇫🇷" />
+                    <label className="text-sm text-muted-foreground mb-2 block">Chat Languages</label>
+                    <div className="flex items-center gap-2">
+                      <LanguagePill code="en" name={chatSourceLang} flag="🇬🇧" active />
+                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                      <LanguagePill code="es" name={chatTargetLang} flag="🇪🇸" />
                     </div>
                   </div>
                 </div>

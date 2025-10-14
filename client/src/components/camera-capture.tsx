@@ -13,6 +13,7 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
   const [flashOn, setFlashOn] = useState(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
   const [hasCamera, setHasCamera] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -28,9 +29,12 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
 
   const startCamera = async () => {
     try {
+      setIsLoading(true);
       setCameraError(null);
+      setHasCamera(false);
       
-      const constraints: MediaStreamConstraints = {
+      // Try with specific facing mode first
+      let constraints: MediaStreamConstraints = {
         video: {
           facingMode: facingMode,
           width: { ideal: 1920 },
@@ -38,22 +42,65 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
         }
       };
 
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      let stream: MediaStream;
+      
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (error) {
+        // Fallback to any available camera if specific facingMode fails
+        console.log("Specific camera failed, trying any camera...");
+        constraints = {
+          video: {
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          }
+        };
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      }
+
       streamRef.current = stream;
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        setHasCamera(true);
+        
+        // Wait for video to be ready
+        const video = videoRef.current;
+        
+        const handleVideoReady = async () => {
+          try {
+            await video.play();
+            setHasCamera(true);
+            setIsLoading(false);
+            console.log("Camera started successfully");
+          } catch (err) {
+            console.error("Video play error:", err);
+            setCameraError("Unable to start video stream. Please use file upload instead.");
+            setHasCamera(false);
+            setIsLoading(false);
+          }
+        };
+
+        // Check if metadata is already loaded
+        if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
+          handleVideoReady();
+        } else {
+          video.onloadedmetadata = handleVideoReady;
+        }
+      } else {
+        throw new Error("Video element not found");
       }
     } catch (error) {
       console.error("Camera access error:", error);
       setHasCamera(false);
+      setIsLoading(false);
       
       if (error instanceof Error) {
         if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
           setCameraError("Camera permission denied. Please allow camera access or use file upload instead.");
         } else if (error.name === "NotFoundError") {
           setCameraError("No camera found on this device. Please use file upload instead.");
+        } else if (error.name === "NotReadableError") {
+          setCameraError("Camera is in use by another application. Please close it and try again.");
         } else {
           setCameraError("Unable to access camera. Please use file upload instead.");
         }
@@ -65,6 +112,9 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
     }
   };
 
@@ -92,6 +142,16 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     
+    // Check if video is ready
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      toast({
+        variant: "destructive",
+        title: "Camera not ready",
+        description: "Please wait for the camera to load or use file upload.",
+      });
+      return;
+    }
+    
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     
@@ -108,13 +168,14 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
     ctx.drawImage(video, 0, 0);
     
     const imageData = canvas.toDataURL('image/jpeg', 0.9);
-    console.log("Image captured:", imageData.substring(0, 50) + "...");
+    console.log("Image captured successfully");
     
     stopCamera();
     onCapture(imageData);
   };
 
-  const toggleCamera = () => {
+  const toggleCamera = async () => {
+    stopCamera();
     setFacingMode(prev => prev === "user" ? "environment" : "user");
   };
 
@@ -152,35 +213,37 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
         </div>
 
         <div className="relative flex-1 bg-black">
-          {hasCamera ? (
-            <>
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-              
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-                <div className="relative h-48 w-64">
-                  <div className="absolute top-0 left-0 h-8 w-8 border-t-2 border-l-2 border-primary rounded-tl-lg" />
-                  <div className="absolute top-0 right-0 h-8 w-8 border-t-2 border-r-2 border-primary rounded-tr-lg" />
-                  <div className="absolute bottom-0 left-0 h-8 w-8 border-b-2 border-l-2 border-primary rounded-bl-lg" />
-                  <div className="absolute bottom-0 right-0 h-8 w-8 border-b-2 border-r-2 border-primary rounded-br-lg" />
-                </div>
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className={`absolute inset-0 w-full h-full object-cover ${hasCamera ? 'opacity-100' : 'opacity-0'}`}
+          />
+          
+          {hasCamera && (
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+              <div className="relative h-48 w-64">
+                <div className="absolute top-0 left-0 h-8 w-8 border-t-2 border-l-2 border-primary rounded-tl-lg" />
+                <div className="absolute top-0 right-0 h-8 w-8 border-t-2 border-r-2 border-primary rounded-tr-lg" />
+                <div className="absolute bottom-0 left-0 h-8 w-8 border-b-2 border-l-2 border-primary rounded-bl-lg" />
+                <div className="absolute bottom-0 right-0 h-8 w-8 border-b-2 border-r-2 border-primary rounded-br-lg" />
               </div>
-            </>
-          ) : (
+            </div>
+          )}
+          
+          {!hasCamera && (
             <div className="absolute inset-0 flex items-center justify-center p-4">
               <Card className="p-8 max-w-md text-center space-y-4">
                 <Camera className="h-16 w-16 mx-auto text-muted-foreground" />
                 <div className="space-y-2">
                   <h3 className="font-heading text-xl font-semibold">
-                    {cameraError ? "Camera Unavailable" : "Camera Loading..."}
+                    {isLoading ? "Loading Camera..." : cameraError ? "Camera Unavailable" : "Camera Ready"}
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    {cameraError || "Requesting camera access..."}
+                    {isLoading 
+                      ? "Requesting camera access..." 
+                      : cameraError || "Camera is ready to use"}
                   </p>
                   {cameraError && (
                     <p className="text-sm font-medium text-primary mt-4">
@@ -213,7 +276,7 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
             size="icon"
             className="h-16 w-16 rounded-full"
             onClick={handleCapture}
-            disabled={!hasCamera}
+            disabled={!hasCamera || isLoading}
             data-testid="button-capture"
           >
             <Camera className="h-8 w-8" />

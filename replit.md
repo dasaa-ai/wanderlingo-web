@@ -22,11 +22,41 @@ WanderLingo is a web-based AI translation application designed for travelers. It
 - User-friendly error messages with clear fallback instructions
 - Success/error toast notifications
 - Loading states with progress indication
+- Auto-save to translation library
+
+**Chat Translation (Fully Functional)**
+- Bidirectional real-time translation using OpenAI GPT-4o-mini
+- Language selection for target translation (English, Spanish, French, German, Italian, Portuguese, Japanese, Korean, Chinese)
+- Text-to-speech support via Web Speech API
+- Message history display with translated pairs
+- Auto-save all chat messages to library
+- Loading states and error handling
+- Mobile-responsive chat interface
+
+**Translation Library (Fully Functional)**
+- PostgreSQL database persistence with Drizzle ORM
+- Search functionality across all saved translations
+- Filter by type (camera or chat) and tags
+- Tag management for organization
+- Delete functionality with confirmation
+- Display of source text, translation, and detected language
+- Auto-save from camera and chat features
+- Real-time updates with TanStack Query
+- Empty state handling
+
+**Usage Tracking & Account (Fully Functional)**
+- Daily usage statistics tracking
+- Camera translations counter
+- Chat messages counter
+- Race-condition-safe atomic upsert operations with unique date constraint
+- PostgreSQL-backed persistence
+- Real-time usage display in account tab
+- Free tier usage limits display
 
 **Design & UI (Canva-Style Light Mode)**
 - Coral accent color (#hsl(9,75%,61%)) for primary CTAs
 - Warm off-white backgrounds with clean typography
-- Mobile-responsive tabbed interface (Camera, Chat, Library)
+- Mobile-responsive tabbed interface (Camera, Chat, Library, Account)
 - Shadcn UI components with custom Canva-inspired styling
 - Smooth transitions and professional layout
 
@@ -35,18 +65,6 @@ WanderLingo is a web-based AI translation application designed for travelers. It
 - Removed PRO subscription tier per user request
 - Stripe integration prepared (awaiting API keys from user)
 - Pricing section with feature comparison
-
-### 🚧 In Progress / Mock Data
-
-**Chat Translation**
-- UI implemented with message history
-- Mock translations displayed
-- Real-time translation integration pending
-
-**Translation Library**
-- UI with search and filters implemented
-- Mock saved translations displayed
-- Database persistence pending
 
 ## User Preferences
 

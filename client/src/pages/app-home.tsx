@@ -11,30 +11,49 @@ import { LanguagePill } from "@/components/language-pill";
 import { UsageMeter } from "@/components/usage-meter";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function AppHome() {
   const [activeTab, setActiveTab] = useState("camera");
   const [showCamera, setShowCamera] = useState(false);
   const [translationResult, setTranslationResult] = useState<any>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
   const [chatMessages, setChatMessages] = useState([
     { message: "Hello, where is the nearest restaurant?", language: "English", isUser: true, timestamp: "2:45 PM" },
     { message: "Bonjour, où se trouve le restaurant le plus proche?", language: "French", isUser: false, timestamp: "2:45 PM" },
   ]);
   const [inputMessage, setInputMessage] = useState("");
+  const { toast } = useToast();
 
-  const handleCapture = (imageData: string) => {
+  const handleCapture = async (imageData: string) => {
     console.log("Image captured:", imageData);
     setShowCamera(false);
-    // TODO: remove mock functionality
-    setTranslationResult({
-      original: "Menu du jour",
-      translated: "Menu of the day",
-      sourceLang: "French",
-      targetLang: "English",
-      allergens: ["Gluten"],
-      dietary: ["Contains meat"],
-      culturalTip: "Traditional French preparation",
-    });
+    setIsTranslating(true);
+    setTranslationResult(null);
+
+    try {
+      const response = await apiRequest("POST", "/api/translate-image", {
+        image: imageData,
+        targetLanguage: "English"
+      });
+
+      const result = await response.json();
+      setTranslationResult(result);
+      toast({
+        title: "Translation complete!",
+        description: "Your image has been translated successfully.",
+      });
+    } catch (error) {
+      console.error("Translation error:", error);
+      toast({
+        variant: "destructive",
+        title: "Translation failed",
+        description: error instanceof Error ? error.message : "Failed to translate image. Please try again.",
+      });
+    } finally {
+      setIsTranslating(false);
+    }
   };
 
   const handleSendMessage = () => {
@@ -92,7 +111,17 @@ export default function AppHome() {
                 </div>
               </div>
 
-              {!translationResult ? (
+              {isTranslating ? (
+                <Card className="p-12 text-center">
+                  <div className="mx-auto h-16 w-16 rounded-full border-4 border-primary border-t-transparent animate-spin mb-4" />
+                  <h3 className="font-heading text-xl font-semibold mb-2">
+                    Translating...
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Extracting text and analyzing your image
+                  </p>
+                </Card>
+              ) : !translationResult ? (
                 <Card className="p-12 text-center">
                   <Camera className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
                   <h3 className="font-heading text-xl font-semibold mb-2">

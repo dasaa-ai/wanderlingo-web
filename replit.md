@@ -9,14 +9,17 @@ WanderLingo is a web-based AI translation application designed for travelers. It
 ### ✅ Completed Features
 
 **Camera Translation (Fully Functional)**
-- Real-time OCR using Tesseract.js with multi-language support (English, French, Spanish, German, Italian, Portuguese, Japanese, Korean, Chinese)
-- AI-powered translation via OpenAI GPT-4o-mini through Replit AI Integrations (no personal API key required)
+- **Live camera stream** with real-time preview on desktop and mobile
+- **Photo capture** using MediaDevices API with canvas-based frame extraction
+- **Camera switching** between front and back cameras with automatic fallback
+- **Real-time OCR** using Tesseract.js with multi-language support (English, French, Spanish, German, Italian, Portuguese, Japanese, Korean, Chinese)
+- **AI-powered translation** via OpenAI GPT-4o-mini through Replit AI Integrations (no personal API key required)
 - Allergen and dietary restriction detection for food items
 - Cultural tips and context for translated content
-- Camera capture with front/back camera selection
-- Image file upload support
+- Image file upload fallback when camera unavailable
 - "New Translation" button for easy workflow restart
-- Comprehensive error handling with user-friendly messages
+- Comprehensive error handling (permission denied, camera in use, no camera found)
+- User-friendly error messages with clear fallback instructions
 - Success/error toast notifications
 - Loading states with progress indication
 

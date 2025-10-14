@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Camera, MessageCircle, Library as LibraryIcon, User, ArrowRight, Trash2 } from "lucide-react";
+import { Camera, MessageCircle, Library as LibraryIcon, User, ArrowRight, Trash2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -9,6 +9,7 @@ import { ChatBubble } from "@/components/chat-bubble";
 import { LibraryItem } from "@/components/library-item";
 import { LanguagePill } from "@/components/language-pill";
 import { UsageMeter } from "@/components/usage-meter";
+import { SaveTranslationDialog } from "@/components/save-translation-dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -29,6 +30,9 @@ export default function AppHome() {
   const [libraryTranslations, setLibraryTranslations] = useState<Translation[]>([]);
   const [librarySearch, setLibrarySearch] = useState("");
   const [usageStats, setUsageStats] = useState({ cameraTranslations: 0, chatMessages: 0 });
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [pendingSave, setPendingSave] = useState<{ data: any; type: "camera" | "chat" } | null>(null);
+  const [lastChatTranslation, setLastChatTranslation] = useState<any>(null);
   const { toast } = useToast();
 
   // Fetch library translations on mount and tab change
@@ -65,21 +69,47 @@ export default function AppHome() {
     }
   };
 
-  const saveToLibrary = async (translationData: any, type: "camera" | "chat") => {
+  const openSaveDialog = (translationData: any, type: "camera" | "chat") => {
+    setPendingSave({ data: translationData, type });
+    setSaveDialogOpen(true);
+  };
+
+  const handleSaveToLibrary = async (customData: { tags: string[]; notes: string }) => {
+    if (!pendingSave) return;
+
+    const { data, type } = pendingSave;
+    
     try {
       await apiRequest("POST", "/api/translations", {
         type,
-        originalText: translationData.original,
-        translatedText: translationData.translated,
-        sourceLang: translationData.sourceLang,
-        targetLang: translationData.targetLang,
-        allergens: translationData.allergens || [],
-        dietary: translationData.dietary || [],
-        culturalTip: translationData.culturalTip || "",
-        tags: [],
+        originalText: data.original,
+        translatedText: data.translated,
+        sourceLang: data.sourceLang,
+        targetLang: data.targetLang,
+        allergens: data.allergens || [],
+        dietary: data.dietary || [],
+        culturalTip: data.culturalTip || "",
+        tags: customData.tags,
+        notes: customData.notes,
       });
+
+      toast({
+        title: "Saved to library",
+        description: "Translation has been saved successfully.",
+      });
+
+      // Refresh library if on library tab
+      if (activeTab === "library") {
+        await fetchLibraryTranslations();
+      }
     } catch (error) {
       console.error("Error saving to library:", error);
+      toast({
+        variant: "destructive",
+        title: "Save failed",
+        description: "Unable to save translation. Please try again.",
+      });
+      throw error;
     }
   };
 
@@ -97,9 +127,6 @@ export default function AppHome() {
 
       const result = await response.json();
       setTranslationResult(result);
-      
-      // Save to library
-      await saveToLibrary(result, "camera");
       
       // Refresh usage stats
       await fetchUsageStats();
@@ -165,8 +192,8 @@ export default function AppHome() {
 
       const result = await response.json();
       
-      // Save to library
-      await saveToLibrary(result, "chat");
+      // Store the last translation for potential saving
+      setLastChatTranslation(result);
       
       // Refresh usage stats
       await fetchUsageStats();
@@ -284,18 +311,30 @@ export default function AppHome() {
                 </Card>
               ) : (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <h3 className="font-heading text-lg font-semibold">Translation Result</h3>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        setTranslationResult(null);
-                        setShowCamera(true);
-                      }} 
-                      data-testid="button-new-translation"
-                    >
-                      New Translation
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => openSaveDialog(translationResult, "camera")} 
+                        data-testid="button-save-camera-translation"
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        Save to Library
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        size="sm" 
+                        onClick={() => {
+                          setTranslationResult(null);
+                          setShowCamera(true);
+                        }} 
+                        data-testid="button-new-translation"
+                      >
+                        New Translation
+                      </Button>
+                    </div>
                   </div>
                   <TranslationResult {...translationResult} />
                 </div>
@@ -381,22 +420,36 @@ export default function AppHome() {
             </div>
 
             <div className="border-t p-4">
-              <div className="mx-auto max-w-4xl flex gap-2">
-                <Input
-                  placeholder="Type a message..."
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
-                  disabled={isTranslatingChat}
-                  data-testid="input-chat-message"
-                />
-                <Button 
-                  onClick={handleSendMessage} 
-                  disabled={!inputMessage.trim() || isTranslatingChat}
-                  data-testid="button-send-message"
-                >
-                  Send
-                </Button>
+              <div className="mx-auto max-w-4xl space-y-2">
+                {lastChatTranslation && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => openSaveDialog(lastChatTranslation, "chat")}
+                    className="w-full"
+                    data-testid="button-save-chat-translation"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Last Translation to Library
+                  </Button>
+                )}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Type a message..."
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
+                    disabled={isTranslatingChat}
+                    data-testid="input-chat-message"
+                  />
+                  <Button 
+                    onClick={handleSendMessage} 
+                    disabled={!inputMessage.trim() || isTranslatingChat}
+                    data-testid="button-send-message"
+                  >
+                    Send
+                  </Button>
+                </div>
               </div>
             </div>
           </TabsContent>
@@ -505,6 +558,16 @@ export default function AppHome() {
         <CameraCapture
           onCapture={handleCapture}
           onClose={() => setShowCamera(false)}
+        />
+      )}
+
+      {pendingSave && (
+        <SaveTranslationDialog
+          open={saveDialogOpen}
+          onOpenChange={setSaveDialogOpen}
+          translationData={pendingSave.data}
+          type={pendingSave.type}
+          onSave={handleSaveToLibrary}
         />
       )}
     </div>

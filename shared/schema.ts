@@ -20,6 +20,7 @@ export const translations = pgTable("translations", {
   dietary: text("dietary").array(),
   culturalTip: text("cultural_tip"),
   tags: text("tags").array(),
+  notes: text("notes"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 

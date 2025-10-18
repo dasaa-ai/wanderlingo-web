@@ -1,4 +1,9 @@
 name: e2e
+- name: Install CI web server
+  run: npm i -D http-server wait-on
+
+- name: Start app (static preview)
+  run: npm run preview:ci & npx wait-on -t 180000 http://localhost:3000
 on:
   push: { branches: [main] }
   pull_request:
@@ -27,3 +32,4 @@ jobs:
         with:
           name: playwright-report
           path: playwright-report
+          

@@ -111,3 +111,9 @@
     "bufferutil": "^4.0.8"
   }
 }
+"scripts": {
+  "dev": "vite",
+  "build": "vite build",
+  "start": "vite preview --port 3000 --strictPort",
+  "preview:ci": "http-server ./dist -p 3000 -s"
+}

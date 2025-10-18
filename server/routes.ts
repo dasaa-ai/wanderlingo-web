@@ -35,6 +35,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("Extracted text:", text);
 
+      // Clean the OCR text to avoid content filter issues
+      // Remove excessive special characters and garbled output
+      const cleanedText = text
+        .replace(/[^\w\s\-.,!?'"/():;@#$%&*+=<>[\]{}|\\～·•※◆▪▫■□●○◎◇◆★☆♪♫€£¥₩]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (!cleanedText || cleanedText.length < 3) {
+        return res.status(400).json({ 
+          error: "Unable to extract readable text from image. Please try a clearer photo with better lighting and focus." 
+        });
+      }
+
+      console.log("Cleaned text:", cleanedText);
+
       // Detect source language and translate using OpenAI
       const targetLang = targetLanguage === "auto-detect" || !targetLanguage ? "the user's preferred language (ask them to specify)" : targetLanguage;
       
@@ -44,46 +59,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         messages: [
           {
             role: "system",
-            content: `You are a travel translation assistant with auto-detection capabilities and OCR error correction. The text you receive may contain OCR errors, garbled characters, or formatting issues from a captured image.
+            content: `You are a translation assistant. Analyze the text and provide a translation.
 
-YOUR TASKS:
-1. Clean and reconstruct the text - fix OCR errors, remove garbled characters, and intelligently reconstruct what the text likely says
-2. Auto-detect the source language (can be ANY language in the world)
-3. Translate to ${targetLang} (support ANY language - use the exact language name provided)
-4. Identify allergen warnings if this appears to be a menu (gluten, dairy, nuts, shellfish, eggs, soy, etc.)
-5. Note dietary information if applicable (vegetarian, vegan, contains meat, etc.)
-6. Provide cultural or contextual tips if relevant
+Tasks:
+1. Detect the source language (any language)
+2. Translate to ${targetLang}
+3. For food-related text, identify allergens and dietary info
+4. Add cultural tips if helpful
 
-OCR ERROR HANDLING:
-- The text may have garbled characters like "ㅜ", "개", special symbols
-- Remove or replace nonsensical characters
-- Use context clues to reconstruct likely meaning
-- If text appears to be a menu item, business sign, or document, infer the likely content
-- Clean up line breaks and formatting issues
-- If the text is too garbled to make sense, set confidence to "low" and do your best interpretation
-
-IMPORTANT: 
-- Auto-detect the source language after cleaning the text
-- Translate to the EXACT language specified: ${targetLang}
-- Support ALL world languages including regional dialects
-- In the "original" field, provide the CLEANED/CORRECTED version of the text, not the garbled OCR output
-- In "translated", provide the translation in ${targetLang}
-
-Respond in JSON format:
+Return JSON:
 {
-  "sourceLang": "detected language name",
+  "sourceLang": "detected language",
   "targetLang": "${targetLang}",
-  "original": "cleaned/corrected original text",
-  "translated": "translated text in ${targetLang}",
-  "allergens": ["allergen1", "allergen2"],
-  "dietary": ["dietary info"],
-  "culturalTip": "optional cultural context",
-  "confidence": "high/medium/low"
+  "original": "original text",
+  "translated": "translation in ${targetLang}",
+  "allergens": [],
+  "dietary": [],
+  "culturalTip": "",
+  "confidence": "high"
 }`
           },
           {
             role: "user",
-            content: `OCR extracted text (may contain errors): ${text}`
+            content: `Text from image: ${cleanedText}`
           }
         ],
         response_format: { type: "json_object" },

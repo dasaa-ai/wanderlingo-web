@@ -36,25 +36,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Extracted text:", text);
 
       // Detect source language and translate using OpenAI
+      const targetLang = targetLanguage === "auto-detect" || !targetLanguage ? "the user's preferred language (ask them to specify)" : targetLanguage;
+      
       // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
-            content: `You are a travel translation assistant. Analyze the provided text (likely from a menu or sign) and provide:
-1. The detected source language
-2. Translation to ${targetLanguage}
+            content: `You are a travel translation assistant with auto-detection capabilities. Analyze the provided text (likely from a menu or sign) and provide:
+1. Automatically detect the source language (can be ANY language in the world)
+2. Translate to ${targetLang} (support ANY language - use the exact language name provided by user)
 3. Any allergen warnings (gluten, dairy, nuts, shellfish, eggs, soy, etc.)
 4. Dietary information (vegetarian, vegan, contains meat, etc.)
 5. Cultural or contextual tips if relevant
 
+IMPORTANT: 
+- Auto-detect the source language - do not assume anything
+- Translate to the EXACT language specified: ${targetLang}
+- Support ALL world languages including regional dialects
+
 Respond in JSON format with this structure:
 {
-  "sourceLang": "detected language",
-  "targetLang": "${targetLanguage}",
+  "sourceLang": "detected language name",
+  "targetLang": "${targetLang}",
   "original": "original text",
-  "translated": "translated text",
+  "translated": "translated text in ${targetLang}",
   "allergens": ["allergen1", "allergen2"],
   "dietary": ["dietary info"],
   "culturalTip": "optional cultural context",
@@ -90,7 +97,7 @@ Respond in JSON format with this structure:
   // Chat translation endpoint
   app.post("/api/translate-text", async (req, res) => {
     try {
-      const { text, sourceLang, targetLang } = req.body;
+      const { text, targetLang } = req.body;
 
       if (!text || !targetLang) {
         return res.status(400).json({ error: "Text and target language are required" });
@@ -101,14 +108,24 @@ Respond in JSON format with this structure:
         messages: [
           {
             role: "system",
-            content: `You are a travel translation assistant. Translate the provided text from ${sourceLang || "auto-detected language"} to ${targetLang}.
+            content: `You are a travel translation assistant with auto-detection capabilities. 
             
+TASK: 
+1. Automatically detect the source language from the user's text (support ALL world languages)
+2. Translate to ${targetLang} (support ANY language - use the exact language name provided)
+
+IMPORTANT:
+- Auto-detect the source language - never assume it
+- Translate to the EXACT language specified: ${targetLang}
+- Support ALL world languages including regional dialects
+- Provide accurate, natural translations
+
 Respond in JSON format with this structure:
 {
-  "sourceLang": "detected or provided source language",
+  "sourceLang": "detected source language name",
   "targetLang": "${targetLang}",
   "original": "original text",
-  "translated": "translated text"
+  "translated": "translated text in ${targetLang}"
 }`
           },
           {

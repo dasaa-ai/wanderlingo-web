@@ -24,9 +24,9 @@ export default function AppHome() {
   const [isTranslating, setIsTranslating] = useState(false);
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [inputMessage, setInputMessage] = useState("");
-  const [chatSourceLang, setChatSourceLang] = useState("English");
-  const [chatTargetLang, setChatTargetLang] = useState("Spanish");
+  const [chatTargetLang, setChatTargetLang] = useState("");
   const [isTranslatingChat, setIsTranslatingChat] = useState(false);
+  const [cameraTargetLang, setCameraTargetLang] = useState("");
   const [libraryTranslations, setLibraryTranslations] = useState<Translation[]>([]);
   const [librarySearch, setLibrarySearch] = useState("");
   const [usageStats, setUsageStats] = useState({ cameraTranslations: 0, chatMessages: 0 });
@@ -122,7 +122,7 @@ export default function AppHome() {
     try {
       const response = await apiRequest("POST", "/api/translate-image", {
         image: imageData,
-        targetLanguage: "English"
+        targetLanguage: cameraTargetLang || "auto-detect"
       });
 
       const result = await response.json();
@@ -169,6 +169,14 @@ export default function AppHome() {
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isTranslatingChat) return;
+    if (!chatTargetLang.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Target language required",
+        description: "Please enter the language you want to translate to.",
+      });
+      return;
+    }
     
     const userMessage = inputMessage;
     setInputMessage("");
@@ -177,7 +185,7 @@ export default function AppHome() {
     // Add user message to chat
     const newUserMessage = { 
       message: userMessage, 
-      language: chatSourceLang, 
+      language: "Auto-detected", 
       isUser: true, 
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
@@ -186,7 +194,6 @@ export default function AppHome() {
     try {
       const response = await apiRequest("POST", "/api/translate-text", {
         text: userMessage,
-        sourceLang: chatSourceLang,
         targetLang: chatTargetLang,
       });
 
@@ -217,12 +224,6 @@ export default function AppHome() {
     } finally {
       setIsTranslatingChat(false);
     }
-  };
-
-  const swapLanguages = () => {
-    const temp = chatSourceLang;
-    setChatSourceLang(chatTargetLang);
-    setChatTargetLang(temp);
   };
 
   const deleteTranslation = async (id: string) => {
@@ -278,12 +279,15 @@ export default function AppHome() {
         <div className="flex-1 overflow-auto">
           <TabsContent value="camera" className="m-0 h-full p-4">
             <div className="mx-auto max-w-4xl space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="flex gap-2">
-                  <LanguagePill code="fr" name="French" flag="🇫🇷" active />
-                  <span className="text-muted-foreground">→</span>
-                  <LanguagePill code="en" name="English" flag="🇬🇧" />
-                </div>
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-medium whitespace-nowrap">Translate to:</label>
+                <Input
+                  placeholder="Enter any language (e.g., Spanish, Japanese, French)"
+                  value={cameraTargetLang}
+                  onChange={(e) => setCameraTargetLang(e.target.value)}
+                  data-testid="input-camera-target-language"
+                  className="flex-1"
+                />
               </div>
 
               {isTranslating ? (
@@ -345,48 +349,15 @@ export default function AppHome() {
           <TabsContent value="chat" className="m-0 h-full flex flex-col">
             <div className="flex-1 overflow-auto p-4">
               <div className="mx-auto max-w-4xl space-y-4">
-                <div className="flex items-center justify-center gap-3">
-                  <Select value={chatSourceLang} onValueChange={setChatSourceLang}>
-                    <SelectTrigger className="w-[140px]" data-testid="select-source-language">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="English">English</SelectItem>
-                      <SelectItem value="Spanish">Spanish</SelectItem>
-                      <SelectItem value="French">French</SelectItem>
-                      <SelectItem value="German">German</SelectItem>
-                      <SelectItem value="Italian">Italian</SelectItem>
-                      <SelectItem value="Portuguese">Portuguese</SelectItem>
-                      <SelectItem value="Japanese">Japanese</SelectItem>
-                      <SelectItem value="Korean">Korean</SelectItem>
-                      <SelectItem value="Chinese">Chinese</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8" 
-                    onClick={swapLanguages}
-                    data-testid="button-swap-languages"
-                  >
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                  <Select value={chatTargetLang} onValueChange={setChatTargetLang}>
-                    <SelectTrigger className="w-[140px]" data-testid="select-target-language">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="English">English</SelectItem>
-                      <SelectItem value="Spanish">Spanish</SelectItem>
-                      <SelectItem value="French">French</SelectItem>
-                      <SelectItem value="German">German</SelectItem>
-                      <SelectItem value="Italian">Italian</SelectItem>
-                      <SelectItem value="Portuguese">Portuguese</SelectItem>
-                      <SelectItem value="Japanese">Japanese</SelectItem>
-                      <SelectItem value="Korean">Korean</SelectItem>
-                      <SelectItem value="Chinese">Chinese</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="flex items-center gap-3">
+                  <label className="text-sm font-medium whitespace-nowrap">Translate to:</label>
+                  <Input
+                    placeholder="Enter any language (e.g., Spanish, Japanese, French)"
+                    value={chatTargetLang}
+                    onChange={(e) => setChatTargetLang(e.target.value)}
+                    data-testid="input-chat-target-language"
+                    className="flex-1"
+                  />
                 </div>
 
                 {chatMessages.length === 0 ? (
@@ -537,14 +508,24 @@ export default function AppHome() {
               </Card>
 
               <Card className="p-6">
-                <h3 className="font-heading text-xl font-semibold mb-4">Language Preferences</h3>
+                <h3 className="font-heading text-xl font-semibold mb-4">Features</h3>
                 <div className="space-y-3">
-                  <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Chat Languages</label>
-                    <div className="flex items-center gap-2">
-                      <LanguagePill code="en" name={chatSourceLang} flag="🇬🇧" active />
-                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                      <LanguagePill code="es" name={chatTargetLang} flag="🇪🇸" />
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                      <Camera className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Auto-detect Language</p>
+                      <p className="text-sm text-muted-foreground">Automatically identifies source language</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                      <MessageCircle className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Any Language Support</p>
+                      <p className="text-sm text-muted-foreground">Translate to any language in the world</p>
                     </div>
                   </div>
                 </div>

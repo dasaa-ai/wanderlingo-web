@@ -12,6 +12,10 @@ interface TranslationResultProps {
   allergens?: string[];
   dietary?: string[];
   culturalTip?: string;
+  onCopy?: () => void;
+  onSpeak?: () => void;
+  onSave?: () => void;
+  onRetranslate?: () => void;
 }
 
 export function TranslationResult({
@@ -23,6 +27,10 @@ export function TranslationResult({
   allergens,
   dietary,
   culturalTip,
+  onCopy,
+  onSpeak,
+  onSave,
+  onRetranslate,
 }: TranslationResultProps) {
   return (
     <div className="space-y-4">
@@ -77,22 +85,30 @@ export function TranslationResult({
       )}
 
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" className="gap-2" onClick={() => console.log("Copy")} data-testid="button-copy">
-          <Copy className="h-4 w-4" />
-          Copy
-        </Button>
-        <Button variant="outline" size="sm" className="gap-2" onClick={() => console.log("Speak")} data-testid="button-speak">
-          <Volume2 className="h-4 w-4" />
-          Speak
-        </Button>
-        <Button variant="outline" size="sm" className="gap-2" onClick={() => console.log("Save")} data-testid="button-save">
-          <Save className="h-4 w-4" />
-          Save
-        </Button>
-        <Button variant="outline" size="sm" className="gap-2" onClick={() => console.log("Re-translate")} data-testid="button-retranslate">
-          <RotateCcw className="h-4 w-4" />
-          Re-translate
-        </Button>
+        {onCopy && (
+          <Button variant="outline" size="sm" className="gap-2" onClick={onCopy} data-testid="button-copy">
+            <Copy className="h-4 w-4" />
+            Copy
+          </Button>
+        )}
+        {onSpeak && (
+          <Button variant="outline" size="sm" className="gap-2" onClick={onSpeak} data-testid="button-speak">
+            <Volume2 className="h-4 w-4" />
+            Speak
+          </Button>
+        )}
+        {onSave && (
+          <Button variant="outline" size="sm" className="gap-2" onClick={onSave} data-testid="button-save">
+            <Save className="h-4 w-4" />
+            Save
+          </Button>
+        )}
+        {onRetranslate && (
+          <Button variant="outline" size="sm" className="gap-2" onClick={onRetranslate} data-testid="button-retranslate">
+            <RotateCcw className="h-4 w-4" />
+            Re-translate
+          </Button>
+        )}
       </div>
     </div>
   );

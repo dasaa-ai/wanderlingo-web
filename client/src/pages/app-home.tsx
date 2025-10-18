@@ -27,6 +27,7 @@ export default function AppHome() {
   const [chatTargetLang, setChatTargetLang] = useState("");
   const [isTranslatingChat, setIsTranslatingChat] = useState(false);
   const [cameraTargetLang, setCameraTargetLang] = useState("");
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [libraryTranslations, setLibraryTranslations] = useState<Translation[]>([]);
   const [librarySearch, setLibrarySearch] = useState("");
   const [usageStats, setUsageStats] = useState({ cameraTranslations: 0, chatMessages: 0 });
@@ -116,13 +117,29 @@ export default function AppHome() {
   const handleCapture = async (imageData: string) => {
     console.log("Image captured:", imageData);
     setShowCamera(false);
+    setCapturedImage(imageData);
+    setTranslationResult(null);
+  };
+
+  const handleTranslateImage = async () => {
+    if (!capturedImage) return;
+    
+    if (!cameraTargetLang.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Target language required",
+        description: "Please enter the language you want to translate to.",
+      });
+      return;
+    }
+
     setIsTranslating(true);
     setTranslationResult(null);
 
     try {
       const response = await apiRequest("POST", "/api/translate-image", {
-        image: imageData,
-        targetLanguage: cameraTargetLang || "auto-detect"
+        image: capturedImage,
+        targetLanguage: cameraTargetLang
       });
 
       const result = await response.json();
@@ -279,17 +296,6 @@ export default function AppHome() {
         <div className="flex-1 overflow-auto">
           <TabsContent value="camera" className="m-0 h-full p-4">
             <div className="mx-auto max-w-4xl space-y-6">
-              <div className="flex items-center gap-3">
-                <label className="text-sm font-medium whitespace-nowrap">Translate to:</label>
-                <Input
-                  placeholder="Enter any language (e.g., Spanish, Japanese, French)"
-                  value={cameraTargetLang}
-                  onChange={(e) => setCameraTargetLang(e.target.value)}
-                  data-testid="input-camera-target-language"
-                  className="flex-1"
-                />
-              </div>
-
               {isTranslating ? (
                 <Card className="p-12 text-center">
                   <div className="mx-auto h-16 w-16 rounded-full border-4 border-primary border-t-transparent animate-spin mb-4" />
@@ -300,7 +306,7 @@ export default function AppHome() {
                     Extracting text and analyzing your image
                   </p>
                 </Card>
-              ) : !translationResult ? (
+              ) : !capturedImage ? (
                 <Card className="p-12 text-center">
                   <Camera className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
                   <h3 className="font-heading text-xl font-semibold mb-2">
@@ -313,34 +319,91 @@ export default function AppHome() {
                     Open Camera
                   </Button>
                 </Card>
+              ) : !translationResult ? (
+                <div className="space-y-6">
+                  <Card className="p-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-heading text-lg font-semibold">Image Captured</h3>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            setCapturedImage(null);
+                            setShowCamera(true);
+                          }} 
+                          data-testid="button-recapture"
+                        >
+                          Recapture
+                        </Button>
+                      </div>
+                      <div className="aspect-video w-full overflow-hidden rounded-lg border bg-muted">
+                        <img 
+                          src={capturedImage} 
+                          alt="Captured" 
+                          className="h-full w-full object-contain"
+                        />
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card className="p-6">
+                    <div className="space-y-4">
+                      <h3 className="font-heading text-lg font-semibold">Select Target Language</h3>
+                      <div className="flex items-center gap-3">
+                        <label className="text-sm font-medium whitespace-nowrap">Translate to:</label>
+                        <Input
+                          placeholder="Enter any language (e.g., Spanish, Japanese, French)"
+                          value={cameraTargetLang}
+                          onChange={(e) => setCameraTargetLang(e.target.value)}
+                          data-testid="input-camera-target-language"
+                          className="flex-1"
+                        />
+                      </div>
+                      <Button 
+                        size="lg" 
+                        className="w-full"
+                        onClick={handleTranslateImage}
+                        data-testid="button-translate"
+                      >
+                        <ArrowRight className="h-4 w-4 mr-2" />
+                        Translate
+                      </Button>
+                    </div>
+                  </Card>
+                </div>
               ) : (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-2">
                     <h3 className="font-heading text-lg font-semibold">Translation Result</h3>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => openSaveDialog(translationResult, "camera")} 
-                        data-testid="button-save-camera-translation"
-                      >
-                        <Save className="h-4 w-4 mr-2" />
-                        Save to Library
-                      </Button>
-                      <Button 
-                        variant="outline"
-                        size="sm" 
-                        onClick={() => {
-                          setTranslationResult(null);
-                          setShowCamera(true);
-                        }} 
-                        data-testid="button-new-translation"
-                      >
-                        New Translation
-                      </Button>
-                    </div>
+                    <Button 
+                      variant="outline"
+                      size="sm" 
+                      onClick={() => {
+                        setTranslationResult(null);
+                        setCapturedImage(null);
+                        setShowCamera(true);
+                      }} 
+                      data-testid="button-new-translation"
+                    >
+                      New Translation
+                    </Button>
                   </div>
-                  <TranslationResult {...translationResult} />
+                  <TranslationResult 
+                    {...translationResult}
+                    onCopy={() => {
+                      navigator.clipboard.writeText(translationResult.translated);
+                      toast({ title: "Copied to clipboard" });
+                    }}
+                    onSpeak={() => {
+                      const utterance = new SpeechSynthesisUtterance(translationResult.translated);
+                      window.speechSynthesis.speak(utterance);
+                    }}
+                    onSave={() => openSaveDialog(translationResult, "camera")}
+                    onRetranslate={() => {
+                      setTranslationResult(null);
+                    }}
+                  />
                 </div>
               )}
             </div>

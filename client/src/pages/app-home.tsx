@@ -99,6 +99,15 @@ export default function AppHome() {
         description: "Translation has been saved successfully.",
       });
 
+      // Prompt for account creation for free plan users
+      setTimeout(() => {
+        toast({
+          title: "Create an account",
+          description: "Sign up for a free account to access your saved translations across devices and unlock premium features!",
+          duration: 6000,
+        });
+      }, 1500);
+
       // Refresh library if on library tab
       if (activeTab === "library") {
         await fetchLibraryTranslations();
